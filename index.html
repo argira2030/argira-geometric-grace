@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es-ES">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Argira — Geometric Grace v2.2.1 · Audit System</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #04040a; --surface: #090912; --border: #111122; --text: #e8e8f0;
+    --muted: #9a9ab8; --gold: #f5c842; --blue: #60a5fa; --red: #f43f5e; --green: #22c55e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif;
+    min-height: 100vh; padding: 28px 16px; display: flex; flex-direction: column; align-items: center;
+  }
+  header { text-align: center; margin-bottom: 24px; }
+  h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.02em; }
+  h1 span { color: var(--gold); }
+  .subtitle { font-size: 0.75rem; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 4px; }
+  
+  .card, .history-section {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 18px; padding: 22px; width: 100%; max-width: 700px; margin-bottom: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  }
+  .section-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--muted); margin-bottom: 15px; letter-spacing: 0.05em; }
+
+  .control-row { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .mode-btn {
+    flex: 1; padding: 12px; border-radius: 10px; border: 1.5px solid var(--border);
+    background: transparent; color: var(--muted); font-weight: 700; cursor: pointer; transition: 0.2s;
+  }
+  .mode-btn.active { background: var(--gold); color: #0a0a0f; border-color: var(--gold); }
+
+  .slider-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+  .field label { display: block; font-size: 0.65rem; color: var(--muted); text-transform: uppercase; margin-bottom: 5px; }
+  .field input { width: 100%; accent-color: var(--gold); }
+
+  canvas { width: 100%; border-radius: 12px; background: #000; display: block; margin-top: 15px; border: 1px solid var(--border); }
+
+  .result-box { margin-top: 20px; padding: 18px; border-radius: 12px; background: var(--bg); border: 1px solid var(--border); display: none; }
+  .result-box.visible { display: block; }
+  .metric { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-family: 'DM Mono', monospace; font-size: 0.85rem; }
+  .diag-badge { display: inline-block; padding: 6px 14px; border-radius: 99px; font-weight: 800; margin: 15px 0; font-size: 0.75rem; }
+
+  .action-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .btn-ui { padding: 12px; border-radius: 10px; font-weight: 700; cursor: pointer; background: transparent; transition: 0.2s; }
+  .btn-voice { border: 1.5px solid var(--gold); color: var(--gold); }
+  .btn-json { border: 1.5px solid var(--blue); color: var(--blue); }
+
+  .history-table { width: 100%; border-collapse: collapse; font-family: 'DM Mono', monospace; font-size: 0.7rem; margin-top: 10px; }
+  .history-table th { text-align: left; color: var(--muted); padding: 8px; border-bottom: 1px solid var(--border); }
+  .history-table td { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .history-tag { padding: 2px 6px; border-radius: 4px; font-weight: 700; text-transform: uppercase; font-size: 0.6rem; }
+
+  footer { margin-top: 10px; font-size: 0.65rem; color: var(--muted); text-align: center; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Geometric <span>Grace</span></h1>
+  <p class="subtitle">Bio-Sincronía & Auditoría Áurea · v2.2.1</p>
+</header>
+
+<section class="card">
+  <div class="control-row" role="group">
+    <button class="mode-btn active" onclick="setMode('sana', this)">🕊️ Sana</button>
+    <button class="mode-btn" onclick="setMode('perfecta', this)">✨ Perfecta</button>
+    <button class="mode-btn" onclick="setMode('estresada', this)">⚠️ Estresada</button>
+  </div>
+
+  <div class="slider-row">
+    <div class="field">
+      <label for="n-barbulas">Densidad de Bárbulas</label>
+      <input type="range" id="n-barbulas" min="20" max="100" value="50" oninput="update()">
+    </div>
+    <div class="field">
+      <label for="noise">Ruido (Varianza)</label>
+      <input type="range" id="noise" min="0" max="5" step="0.1" value="1.0" oninput="update()">
+    </div>
+  </div>
+
+  <canvas id="main-canvas" width="660" height="260" aria-label="Simulación visual"></canvas>
+
+  <div class="result-box" id="result-box">
+    <div class="metric"><span>Ratio φ Medido:</span> <span id="r-ratio" style="color:var(--gold)">--</span></div>
+    <div class="metric"><span>Error Ajustado:</span> <span id="r-error">--</span></div>
+    <div class="metric"><span>CV Espaciado:</span> <span id="r-cv">--</span></div>
+    <div id="r-diag" class="diag-badge">--</div>
+    
+    <div class="action-btns">
+      <button class="btn-ui btn-voice" onclick="speakResult()">🔊 Auditar Voz</button>
+      <button class="btn-ui btn-json" onclick="exportJSON()">💾 Exportar JSON</button>
+    </div>
+  </div>
+</section>
+
+<section class="history-section" id="history-section" style="display:none;">
+  <div class="section-label">📋 Histórico de Sesión</div>
+  <table class="history-table">
+    <thead>
+      <tr><th>MODO</th><th>RATIO</th><th>ERROR</th><th>CV</th></tr>
+    </thead>
+    <tbody id="history-body"></tbody>
+  </table>
+</section>
+
+<footer>
+  Copyright © 2026 Jose Ranero García · All rights reserved.<br>
+  Distributed under CC BY-NC 4.0 license · DOI: 10.5281/zenodo.19112797<br>
+  <a href="https://argira.eus" style="color:var(--gold); text-decoration:none;">argira.eus</a>
+</footer>
+
+<script>
+const PHI = 1.6180339887;
+let currentMode = 'sana';
+let lastData = null;
+
+function gaussRandom() {
+  let u = 0, v = 0;
+  while(u === 0) u = Math.random();
+  while(v === 0) v = Math.random();
+  return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+}
+
+function generateSpacings(n, mode, noiseLevel) {
+  let spacings = [];
+  for (let i = 0; i < n; i++) {
+    let drift = (mode === 'sana') ? (1 + 0.04 * (i/n)) : 1;
+    let noise = gaussRandom() * noiseLevel;
+    if (mode === 'perfecta') noise *= 0.2;
+    if (mode === 'estresada') noise *= 4.5;
+    spacings.push(Math.max(4, (20 * drift) + noise));
+  }
+  return spacings;
+}
+
+function update() {
+  const n = parseInt(document.getElementById('n-barbulas').value);
+  const noise = parseFloat(document.getElementById('noise').value);
+  const spacings = generateSpacings(n, currentMode, noise);
+  
+  const s = [...spacings].sort((a,b) => a - b);
+  const mid = Math.floor(s.length / 2);
+  const ratio = (s.slice(mid).reduce((a,b)=>a+b,0)/mid) / (s.slice(0,mid).reduce((a,b)=>a+b,0)/mid);
+  const mean = spacings.reduce((a,b)=>a+b,0) / spacings.length;
+  const std = Math.sqrt(spacings.reduce((a,b)=>a+(b-mean)**2,0) / spacings.length);
+  const cv = (std/mean) * 100;
+  const error = Math.abs(ratio - PHI) / PHI * 100;
+  
+  lastData = { ratio, cv, error, n, spacings };
+  
+  // UI Update
+  document.getElementById('r-ratio').textContent = ratio.toFixed(6);
+  document.getElementById('r-error').textContent = error.toFixed(2) + '%';
+  document.getElementById('r-cv').textContent = cv.toFixed(2) + '%';
+  document.getElementById('result-box').classList.add('visible');
+  
+  const diag = document.getElementById('r-diag');
+  let color = "";
+  if(error < 10) { diag.textContent = "✨ ESTRUCTURA ÁUREA PERFECTA"; color = "#22c55e"; }
+  else if(error < 25) { diag.textContent = "🕊️ PATRÓN ÁUREO BUENO"; color = "#60a5fa"; }
+  else { diag.textContent = "🔴 ANOMALÍA DETECTADA"; color = "#f43f5e"; }
+  diag.style.color = color;
+  diag.style.backgroundColor = color + "26";
+
+  // Drawing Engine
+  const canvas = document.getElementById('main-canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,660,260);
+  
+  const grad = ctx.createLinearGradient(0,0,0,260);
+  grad.addColorStop(0, '#0d0d14'); grad.addColorStop(1, '#000');
+  ctx.fillStyle = grad; ctx.fillRect(0,0,660,260);
+  
+  ctx.strokeStyle = '#f5c842'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(20, 130); ctx.lineTo(640, 130); ctx.stroke();
+  
+  let x = 30; let step = 600/n;
+  ctx.strokeStyle = color;
+  spacings.forEach((s, i) => {
+    ctx.globalAlpha = 0.4 + (i/n)*0.6;
+    ctx.beginPath(); ctx.moveTo(x, 130 - (s*1.8)); ctx.lineTo(x, 130 + (s*1.8)); ctx.stroke();
+    x += step;
+  });
+  ctx.globalAlpha = 1.0;
+
+  // History Engine
+  const hb = document.getElementById('history-body');
+  document.getElementById('history-section').style.display = "block";
+  const row = document.createElement('tr');
+  row.innerHTML = `<td><span class="history-tag" style="background:${color}33; color:${color}">${currentMode}</span></td>
+                   <td>${ratio.toFixed(4)}</td><td>${error.toFixed(1)}%</td><td>${cv.toFixed(1)}%</td>`;
+  hb.insertBefore(row, hb.firstChild);
+  if(hb.children.length > 5) hb.removeChild(hb.lastChild);
+}
+
+function setMode(mode, btn) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  update();
+}
+
+function speakResult() {
+  const msg = new SpeechSynthesisUtterance(`Audit. Modo ${currentMode}. Ratio ${lastData.ratio.toFixed(3)}`);
+  msg.lang = 'es-ES';
+  window.speechSynthesis.speak(msg);
+}
+
+function exportJSON() {
+  const exportObj = {
+    metadata: { version: "2.2.1-A11y", copyright: "(c) 2026 Jose Ranero García", license: "CC BY-NC 4.0", doi: "10.5281/zenodo.19112797" },
+    metrics: lastData,
+    data: lastData.spacings
+  };
+  const blob = new Blob([JSON.stringify(exportObj, null, 2)], {type: 'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `audit_${currentMode}.json`; a.click();
+}
+
+window.onload = update;
+</script>
+</body>
+</html>
