@@ -3,226 +3,607 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Argira — Geometric Grace v2.2.1 · Audit System</title>
+<title>Argira — Geometric Grace v2.4 · Modo Ideal Áureo</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #04040a; --surface: #090912; --border: #111122; --text: #e8e8f0;
-    --muted: #9a9ab8; --gold: #f5c842; --blue: #60a5fa; --red: #f43f5e; --green: #22c55e;
+    --bg: #04040a;
+    --surface: #090912;
+    --border: #111122;
+    --text: #e8e8f0;
+    --muted: #9a9ab8;
+    --gold: #f5c842;
+    --gold-glow: rgba(245,200,66,0.12);
+    --green: #22c55e;
+    --red: #f43f5e;
+    --blue: #60a5fa;
+    --phi: 1.6180339887;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif;
-    min-height: 100vh; padding: 28px 16px; display: flex; flex-direction: column; align-items: center;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    padding: 28px 16px 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
-  header { text-align: center; margin-bottom: 24px; }
-  h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.02em; }
+  header { text-align: center; margin-bottom: 28px; }
+  .logo { font-size: 2.4rem; animation: float 4s ease-in-out infinite; display: inline-block; }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+  h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.02em; margin-top: 8px; }
   h1 span { color: var(--gold); }
   .subtitle { font-size: 0.75rem; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 4px; }
-  
-  .card, .history-section {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 18px; padding: 22px; width: 100%; max-width: 700px; margin-bottom: 20px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  .version-badge {
+    display: inline-block;
+    background: var(--gold-glow);
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    font-size: 0.62rem;
+    font-family: 'DM Mono', monospace;
+    padding: 2px 8px;
+    border-radius: 99px;
+    margin-top: 6px;
   }
-  .section-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--muted); margin-bottom: 15px; letter-spacing: 0.05em; }
 
-  .control-row { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 22px;
+    width: 100%;
+    max-width: 700px;
+    margin-bottom: 16px;
+  }
+
+  .section-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 12px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .control-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+
   .mode-btn {
-    flex: 1; padding: 12px; border-radius: 10px; border: 1.5px solid var(--border);
-    background: transparent; color: var(--muted); font-weight: 700; cursor: pointer; transition: 0.2s;
+    flex: 1;
+    min-width: 120px;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Syne', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
   }
   .mode-btn.active { background: var(--gold); color: #0a0a0f; border-color: var(--gold); }
+  .mode-btn:hover:not(.active) { border-color: var(--gold); color: var(--gold); }
 
-  .slider-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-  .field label { display: block; font-size: 0.65rem; color: var(--muted); text-transform: uppercase; margin-bottom: 5px; }
-  .field input { width: 100%; accent-color: var(--gold); }
+  .slider-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
 
-  canvas { width: 100%; border-radius: 12px; background: #000; display: block; margin-top: 15px; border: 1px solid var(--border); }
+  .field label {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    margin-bottom: 4px;
+  }
+  .field input[type=range] { width: 100%; accent-color: var(--gold); }
+  .field .val { font-size: 0.75rem; color: var(--gold); font-family: 'DM Mono', monospace; text-align: right; }
 
-  .result-box { margin-top: 20px; padding: 18px; border-radius: 12px; background: var(--bg); border: 1px solid var(--border); display: none; }
+  .gen-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--gold);
+    color: #0a0a0f;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .gen-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(245,200,66,0.3); }
+
+  canvas { width: 100%; border-radius: 12px; display: block; background: #000; }
+
+  .result-box {
+    display: none;
+    margin-top: 14px;
+    padding: 14px;
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+  }
   .result-box.visible { display: block; }
-  .metric { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-family: 'DM Mono', monospace; font-size: 0.85rem; }
-  .diag-badge { display: inline-block; padding: 6px 14px; border-radius: 99px; font-weight: 800; margin: 15px 0; font-size: 0.75rem; }
 
-  .action-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .btn-ui { padding: 12px; border-radius: 10px; font-weight: 700; cursor: pointer; background: transparent; transition: 0.2s; }
-  .btn-voice { border: 1.5px solid var(--gold); color: var(--gold); }
-  .btn-json { border: 1.5px solid var(--blue); color: var(--blue); }
+  .result-metric {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.82rem;
+  }
+  .result-metric:last-child { border-bottom: none; }
+  .result-metric .label { color: var(--muted); font-family: 'DM Mono', monospace; font-size: 0.75rem; }
+  .result-metric .value { font-weight: 700; }
 
-  .history-table { width: 100%; border-collapse: collapse; font-family: 'DM Mono', monospace; font-size: 0.7rem; margin-top: 10px; }
-  .history-table th { text-align: left; color: var(--muted); padding: 8px; border-bottom: 1px solid var(--border); }
-  .history-table td { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-  .history-tag { padding: 2px 6px; border-radius: 4px; font-weight: 700; text-transform: uppercase; font-size: 0.6rem; }
+  .diag-badge {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 99px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin-top: 10px;
+  }
 
-  footer { margin-top: 10px; font-size: 0.65rem; color: var(--muted); text-align: center; line-height: 1.6; }
+  .diag-explain {
+    font-size: 0.7rem;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    margin-top: 8px;
+    line-height: 1.6;
+    padding: 8px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+    border-left: 2px solid var(--border);
+  }
+
+  .info-box {
+    font-size: 0.7rem;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    background: rgba(245,200,66,0.05);
+    border: 1px solid rgba(245,200,66,0.15);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+    line-height: 1.7;
+  }
+  .info-box strong { color: var(--gold); }
+
+  .compare-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .compare-item {
+    background: var(--bg);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    padding: 10px;
+    text-align: center;
+  }
+  .compare-item canvas { border-radius: 8px; }
+  .compare-label { font-size: 0.68rem; font-family: 'DM Mono', monospace; margin-top: 6px; }
+  .compare-metrics { font-size: 0.62rem; font-family: 'DM Mono', monospace; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+
+  .voice-btn {
+    padding: 8px 16px;
+    border-radius: 10px;
+    border: 1.5px solid var(--gold);
+    background: transparent;
+    color: var(--gold);
+    font-size: 0.78rem;
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: all 0.2s;
+  }
+  .voice-btn:hover { background: var(--gold-glow); }
+
+  .mode-info {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+  .mode-chip {
+    font-size: 0.62rem;
+    font-family: 'DM Mono', monospace;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+
+  .confidence-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: rgba(255,255,255,0.1);
+    color: var(--text);
+  }
+  .confidence-high { background: rgba(34,197,94,0.25); color: #4ade80; }
+  .confidence-medium { background: rgba(245,158,11,0.25); color: #fbbf24; }
+  .confidence-low { background: rgba(244,63,94,0.25); color: #f87171; }
+
+  .history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.7rem;
+    font-family: 'DM Mono', monospace;
+    margin-top: 15px;
+  }
+  .history-table th {
+    color: var(--gold);
+    text-align: left;
+    padding: 6px 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .history-table td {
+    padding: 4px;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .history-table td:last-child { font-weight: 700; }
+
+  .export-btn {
+    background: transparent;
+    border: 1px solid var(--blue);
+    color: var(--blue);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.65rem;
+    cursor: pointer;
+    margin-right: 5px;
+  }
+  .export-btn:hover { background: rgba(96,165,250,0.1); }
+
+  .sim-counter {
+    display: inline-block;
+    background: var(--gold-glow);
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: 0.7rem;
+    margin-left: 10px;
+  }
+
+  footer {
+    margin-top: 40px;
+    text-align: center;
+    font-size: 0.68rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    line-height: 1.9;
+    max-width: 700px;
+  }
+  footer a { color: var(--gold); text-decoration: none; }
 </style>
 </head>
 <body>
 
 <header>
+  <div class="logo" aria-hidden="true">🕊️</div>
   <h1>Geometric <span>Grace</span></h1>
-  <p class="subtitle">Bio-Sincronía & Auditoría Áurea · v2.2.1</p>
+  <p class="subtitle">Fibonacci en plumas · φ = 1.6180339887 · Argira Station</p>
+  <div class="version-badge">v2.4 — Modo Ideal Áureo</div>
 </header>
 
-<section class="card">
+<div class="card" role="main">
+  <div class="info-box" style="border-left: 4px solid var(--gold);">
+    <strong>🧪 Nota sobre la aleatoriedad:</strong> Los resultados de cada simulación dependen del azar. Los modos solo ajustan los parámetros de variabilidad. <strong>Puede ocurrir que una pluma "estresada" muestre un patrón áureo, y una "uniforme" no.</strong> Esto refleja la variabilidad real de la naturaleza. El indicador de confianza y el histórico ayudan a interpretar la fiabilidad de cada medición.
+    <span class="sim-counter" id="sim-counter">0 simulaciones</span>
+  </div>
+
+  <div class="section-label">Modo · Mode</div>
   <div class="control-row" role="group">
-    <button class="mode-btn active" onclick="setMode('sana', this)">🕊️ Sana</button>
-    <button class="mode-btn" onclick="setMode('perfecta', this)">✨ Perfecta</button>
-    <button class="mode-btn" onclick="setMode('estresada', this)">⚠️ Estresada</button>
+    <button class="mode-btn" onclick="setMode('uniforme',this)">📏 Uniforme</button>
+    <button class="mode-btn active" onclick="setMode('sana',this)">🕊️ Sana</button>
+    <button class="mode-btn" onclick="setMode('ideal',this)">✨ Ideal Áureo</button>
+    <button class="mode-btn" onclick="setMode('estresada',this)">⚠️ Estresada</button>
+    <button class="mode-btn" onclick="setMode('comparar',this)">📊 Comparar</button>
   </div>
 
   <div class="slider-row">
     <div class="field">
-      <label for="n-barbulas">Densidad de Bárbulas</label>
-      <input type="range" id="n-barbulas" min="20" max="100" value="50" oninput="update()">
+      <label for="n-barbulas">Bárbulas · Barbules</label>
+      <input type="range" id="n-barbulas" min="20" max="100" value="50"
+        oninput="updateSlider('n-barbulas','n-val');generate()">
+      <div class="val" id="n-val">50</div>
     </div>
     <div class="field">
-      <label for="noise">Ruido (Varianza)</label>
-      <input type="range" id="noise" min="0" max="5" step="0.1" value="1.0" oninput="update()">
+      <label for="noise">Ruido biológico · Bio noise</label>
+      <input type="range" id="noise" min="0" max="5" step="0.1" value="1.0"
+        oninput="updateSlider('noise','noise-val');generate()">
+      <div class="val" id="noise-val">1.0</div>
     </div>
   </div>
 
-  <canvas id="main-canvas" width="660" height="260" aria-label="Simulación visual"></canvas>
+  <button class="gen-btn" onclick="generate()">
+    🕊️ Generar simulación · Generate
+  </button>
 
-  <div class="result-box" id="result-box">
-    <div class="metric"><span>Ratio φ Medido:</span> <span id="r-ratio" style="color:var(--gold)">--</span></div>
-    <div class="metric"><span>Error Ajustado:</span> <span id="r-error">--</span></div>
-    <div class="metric"><span>CV Espaciado:</span> <span id="r-cv">--</span></div>
-    <div id="r-diag" class="diag-badge">--</div>
-    
-    <div class="action-btns">
-      <button class="btn-ui btn-voice" onclick="speakResult()">🔊 Auditar Voz</button>
-      <button class="btn-ui btn-json" onclick="exportJSON()">💾 Exportar JSON</button>
+  <!-- Main canvas -->
+  <div id="main-canvas-wrap" style="margin-top:14px;">
+    <canvas id="main-canvas" width="660" height="260"
+      role="img" aria-label="Visualización del patrón de bárbulas"></canvas>
+  </div>
+
+  <!-- Compare grid -->
+  <div id="compare-wrap" style="display:none;">
+    <div class="compare-grid">
+      <div class="compare-item">
+        <canvas id="c-uniforme" width="200" height="140" role="img"></canvas>
+        <div class="compare-label" style="color:var(--muted);">📏 Uniforme</div>
+        <div class="compare-metrics" id="cm-uniforme"></div>
+      </div>
+      <div class="compare-item">
+        <canvas id="c-sana" width="200" height="140" role="img"></canvas>
+        <div class="compare-label" style="color:var(--blue);">🕊️ Sana</div>
+        <div class="compare-metrics" id="cm-sana"></div>
+      </div>
+      <div class="compare-item">
+        <canvas id="c-ideal" width="200" height="140" role="img"></canvas>
+        <div class="compare-label" style="color:var(--green);">✨ Ideal</div>
+        <div class="compare-metrics" id="cm-ideal"></div>
+      </div>
+      <div class="compare-item">
+        <canvas id="c-estresada" width="200" height="140" role="img"></canvas>
+        <div class="compare-label" style="color:var(--red);">⚠️ Estresada</div>
+        <div class="compare-metrics" id="cm-estresada"></div>
+      </div>
     </div>
   </div>
-</section>
 
-<section class="history-section" id="history-section" style="display:none;">
-  <div class="section-label">📋 Histórico de Sesión</div>
-  <table class="history-table">
-    <thead>
-      <tr><th>MODO</th><th>RATIO</th><th>ERROR</th><th>CV</th></tr>
-    </thead>
-    <tbody id="history-body"></tbody>
-  </table>
-</section>
+  <!-- Result -->
+  <div class="result-box" id="result-box" aria-live="polite">
+    <div class="section-label">Resultados · Results</div>
+    <div class="result-metric">
+      <span class="label">φ teórico · Theoretical φ</span>
+      <span class="value" style="color:var(--gold)">1.6180339887</span>
+    </div>
+    <div class="result-metric">
+      <span class="label">Ratio Fibonacci medido</span>
+      <span class="value" id="r-ratio">—</span>
+    </div>
+    <div class="result-metric">
+      <span class="label" title="Error ajustado: incluye penalización por CV > 30%">Error ajustado ⓘ</span>
+      <span class="value" id="r-error">—</span>
+    </div>
+    <div class="result-metric">
+      <span class="label" title="Coeficiente de variación del espaciado. CV < 15% indica alta regularidad.">CV espaciado ⓘ</span>
+      <span class="value" id="r-cv">—</span>
+    </div>
+    <div class="result-metric">
+      <span class="label">Espaciado medio · Mean spacing</span>
+      <span class="value" id="r-mean">—</span>
+    </div>
+    <div class="result-metric">
+      <span class="label">Bárbulas · Barbules</span>
+      <span class="value" id="r-barbulas">—</span>
+    </div>
+    <div class="result-metric">
+      <span class="label">Fiabilidad · Reliability</span>
+      <span class="value" id="r-confidence">—</span>
+    </div>
+    <div>
+      <span class="diag-badge" id="r-diag">—</span>
+    </div>
+    <div class="diag-explain" id="r-explain"></div>
+    <button class="voice-btn" onclick="speakResult()">
+      🔊 Leer resultado · Read aloud
+    </button>
+  </div>
+
+  <!-- Histórico de sesión -->
+  <div style="margin-top: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+      <span class="section-label">📋 Histórico de sesión</span>
+      <div>
+        <button class="export-btn" onclick="exportHistory('csv')">CSV</button>
+        <button class="export-btn" onclick="exportHistory('json')">JSON</button>
+        <button class="export-btn" onclick="clearHistory()" style="border-color:var(--red); color:var(--red);">Limpiar</button>
+      </div>
+    </div>
+    <table class="history-table" id="history-table">
+      <thead>
+        <tr><th>Modo</th><th>Bárbulas</th><th>Ratio φ</th><th>Error%</th><th>CV%</th><th>Fiabilidad</th><th>Diagnóstico</th></tr>
+      </thead>
+      <tbody id="history-body">
+        <!-- Se llena con JavaScript -->
+      </tbody>
+    </table>
+  </div>
+</div>
 
 <footer>
-  Copyright © 2026 Jose Ranero García · All rights reserved.<br>
-  Distributed under CC BY-NC 4.0 license · DOI: 10.5281/zenodo.19112797<br>
-  <a href="https://argira.eus" style="color:var(--gold); text-decoration:none;">argira.eus</a>
+  Argira Geometric Grace v2.4 · Jose Ranero García · Argira Station 2026<br>
+  Fibonacci en plumas de paloma · φ = 1.6180339887<br>
+  <a href="https://argira.eus" target="_blank">argira.eus</a> ·
+  <a href="https://doi.org/10.5281/zenodo.18865019" target="_blank">Argira Pipeline</a> ·
+  <a href="https://ko-fi.com/argira" target="_blank">☕ Ko-fi</a>
 </footer>
 
 <script>
 const PHI = 1.6180339887;
 let currentMode = 'sana';
-let lastData = null;
+let lastResult = null;
+let simulationCount = 0;
+let historyData = [];
 
-function gaussRandom() {
-  let u = 0, v = 0;
-  while(u === 0) u = Math.random();
-  while(v === 0) v = Math.random();
-  return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
-}
-
+// ── MODELO BIOLÓGICO (con nuevo modo 'ideal' y 'uniforme') ──
 function generateSpacings(n, mode, noiseLevel) {
-  let spacings = [];
-  for (let i = 0; i < n; i++) {
-    let drift = (mode === 'sana') ? (1 + 0.04 * (i/n)) : 1;
-    let noise = gaussRandom() * noiseLevel;
-    if (mode === 'perfecta') noise *= 0.2;
-    if (mode === 'estresada') noise *= 4.5;
-    spacings.push(Math.max(4, (20 * drift) + noise));
+  const spacings = [];
+
+  if (mode === 'uniforme') {
+    // Antiguo "perfecta": espaciado constante con poco ruido
+    const base = 20;
+    for (let i = 0; i < n; i++) {
+      const noise = gaussRandom() * 0.3 * noiseLevel;
+      spacings.push(Math.max(2, base + noise));
+    }
+  } else if (mode === 'ideal') {
+    // Progresión geométrica de razón φ (con ruido mínimo)
+    const base = 10; // espaciado inicial
+    for (let i = 0; i < n; i++) {
+      // Progresión: base * φ^(i/10) para que no crezca demasiado rápido
+      const ideal = base * Math.pow(PHI, i / 10);
+      const noise = gaussRandom() * 0.2 * noiseLevel; // ruido muy bajo
+      spacings.push(Math.max(2, ideal + noise));
+    }
+  } else if (mode === 'sana') {
+    const base = 18;
+    const drift = 0.04;
+    for (let i = 0; i < n; i++) {
+      const baseI = base * (1 + drift * (i / n));
+      const noise = gaussRandom() * 1.5 * noiseLevel;
+      spacings.push(Math.max(2, baseI + noise));
+    }
+  } else if (mode === 'estresada') {
+    const base = 18;
+    let stressLevel = 1.0;
+    for (let i = 0; i < n; i++) {
+      if (Math.random() < 0.08) stressLevel *= (1 + Math.random() * 0.5);
+      if (Math.random() < 0.05) stressLevel = Math.max(0.5, stressLevel * 0.6);
+      const noise = gaussRandom() * 4.0 * noiseLevel * stressLevel;
+      const fault = Math.random() < 0.12 ? (Math.random() * 20 - 10) : 0;
+      spacings.push(Math.max(1, base + noise + fault));
+    }
   }
   return spacings;
 }
 
-function update() {
-  const n = parseInt(document.getElementById('n-barbulas').value);
-  const noise = parseFloat(document.getElementById('noise').value);
-  const spacings = generateSpacings(n, currentMode, noise);
-  
-  const s = [...spacings].sort((a,b) => a - b);
-  const mid = Math.floor(s.length / 2);
-  const ratio = (s.slice(mid).reduce((a,b)=>a+b,0)/mid) / (s.slice(0,mid).reduce((a,b)=>a+b,0)/mid);
-  const mean = spacings.reduce((a,b)=>a+b,0) / spacings.length;
-  const std = Math.sqrt(spacings.reduce((a,b)=>a+(b-mean)**2,0) / spacings.length);
-  const cv = (std/mean) * 100;
+function gaussRandom() {
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+// ── ANÁLISIS FIBONACCI (sin cambios) ──────────────────────
+function analyzeFibonacci(spacings) {
+  const s = [...spacings].sort((a, b) => a - b);
+  const n = s.length;
+  const mid = Math.floor(n / 2);
+
+  const ratioMitades = mean(s.slice(mid)) / mean(s.slice(0, mid));
+
+  const q1 = percentile(spacings, 25);
+  const q2 = percentile(spacings, 50);
+  const q3 = percentile(spacings, 75);
+  let ratioCuartiles = 1.0;
+  if (q1 > 0 && q2 > 0 && q3 > 0) {
+    ratioCuartiles = ((q3 / q2) + (q2 / q1)) / 2;
+  }
+
+  const candidates = [ratioMitades, ratioCuartiles].filter(r => r > 0.3 && r < 4.0);
+  let ratio = 1.0;
+  if (candidates.length > 0) {
+    ratio = candidates.reduce((a, b) => Math.abs(a - PHI) < Math.abs(b - PHI) ? a : b);
+  }
+
   const error = Math.abs(ratio - PHI) / PHI * 100;
-  
-  lastData = { ratio, cv, error, n, spacings };
-  
-  // UI Update
-  document.getElementById('r-ratio').textContent = ratio.toFixed(6);
-  document.getElementById('r-error').textContent = error.toFixed(2) + '%';
-  document.getElementById('r-cv').textContent = cv.toFixed(2) + '%';
-  document.getElementById('result-box').classList.add('visible');
-  
-  const diag = document.getElementById('r-diag');
-  let color = "";
-  if(error < 10) { diag.textContent = "✨ ESTRUCTURA ÁUREA PERFECTA"; color = "#22c55e"; }
-  else if(error < 25) { diag.textContent = "🕊️ PATRÓN ÁUREO BUENO"; color = "#60a5fa"; }
-  else { diag.textContent = "🔴 ANOMALÍA DETECTADA"; color = "#f43f5e"; }
-  diag.style.color = color;
-  diag.style.backgroundColor = color + "26";
+  const meanS = mean(spacings);
+  const stdS = std(spacings);
+  const cv = stdS / meanS * 100;
 
-  // Drawing Engine
-  const canvas = document.getElementById('main-canvas');
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0,0,660,260);
-  
-  const grad = ctx.createLinearGradient(0,0,0,260);
-  grad.addColorStop(0, '#0d0d14'); grad.addColorStop(1, '#000');
-  ctx.fillStyle = grad; ctx.fillRect(0,0,660,260);
-  
-  ctx.strokeStyle = '#f5c842'; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(20, 130); ctx.lineTo(640, 130); ctx.stroke();
-  
-  let x = 30; let step = 600/n;
-  ctx.strokeStyle = color;
-  spacings.forEach((s, i) => {
-    ctx.globalAlpha = 0.4 + (i/n)*0.6;
-    ctx.beginPath(); ctx.moveTo(x, 130 - (s*1.8)); ctx.lineTo(x, 130 + (s*1.8)); ctx.stroke();
-    x += step;
-  });
-  ctx.globalAlpha = 1.0;
+  const penCV = Math.max(0, (cv - 30) * 0.25);
+  const errorAjustado = error + penCV;
 
-  // History Engine
-  const hb = document.getElementById('history-body');
-  document.getElementById('history-section').style.display = "block";
-  const row = document.createElement('tr');
-  row.innerHTML = `<td><span class="history-tag" style="background:${color}33; color:${color}">${currentMode}</span></td>
-                   <td>${ratio.toFixed(4)}</td><td>${error.toFixed(1)}%</td><td>${cv.toFixed(1)}%</td>`;
-  hb.insertBefore(row, hb.firstChild);
-  if(hb.children.length > 5) hb.removeChild(hb.lastChild);
+  return { error, errorAjustado, ratio, cv, meanS, stdS,
+           ratioMitades, ratioCuartiles };
 }
 
-function setMode(mode, btn) {
-  currentMode = mode;
-  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  update();
+function mean(arr) { return arr.reduce((a, b) => a + b, 0) / arr.length; }
+function std(arr) {
+  const m = mean(arr);
+  return Math.sqrt(arr.reduce((a, b) => a + (b - m) ** 2, 0) / arr.length);
+}
+function percentile(arr, p) {
+  const s = [...arr].sort((a, b) => a - b);
+  const idx = (p / 100) * (s.length - 1);
+  const lo = Math.floor(idx), hi = Math.ceil(idx);
+  return s[lo] + (s[hi] - s[lo]) * (idx - lo);
 }
 
-function speakResult() {
-  const msg = new SpeechSynthesisUtterance(`Audit. Modo ${currentMode}. Ratio ${lastData.ratio.toFixed(3)}`);
-  msg.lang = 'es-ES';
-  window.speechSynthesis.speak(msg);
-}
-
-function exportJSON() {
-  const exportObj = {
-    metadata: { version: "2.2.1-A11y", copyright: "(c) 2026 Jose Ranero García", license: "CC BY-NC 4.0", doi: "10.5281/zenodo.19112797" },
-    metrics: lastData,
-    data: lastData.spacings
+function getDiag(errorAjustado, cv) {
+  if (errorAjustado < 5)  return {
+    text: '✨ GEOMETRÍA ÁUREA PERFECTA',
+    color: '#22c55e', bg: 'rgba(34,197,94,0.15)',
+    explain: 'Las bárbulas siguen la proporción áurea con alta precisión. CV bajo indica regularidad biológica óptima. Pluma en excelente estado.'
   };
-  const blob = new Blob([JSON.stringify(exportObj, null, 2)], {type: 'application/json'});
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-  a.download = `audit_${currentMode}.json`; a.click();
+  if (errorAjustado < 12) return {
+    text: '🕊️ GEOMETRÍA ÁUREA BUENA',
+    color: '#22c55e', bg: 'rgba(34,197,94,0.1)',
+    explain: 'Patrón Fibonacci claramente presente. Variación biológica normal. Pluma sana con pequeñas irregularidades naturales.'
+  };
+  if (errorAjustado < 25) return {
+    text: '⚠️ GEOMETRÍA MODERADA',
+    color: '#f59e0b', bg: 'rgba(245,158,11,0.15)',
+    explain: 'El patrón áureo es parcialmente detectable. Posible estrés biológico moderado o condiciones subóptimas de crecimiento.'
+  };
+  return {
+    text: '🔴 SIN PATRÓN ÁUREO CLARO',
+    color: '#f43f5e', bg: 'rgba(244,63,94,0.15)',
+    explain: 'Alta irregularidad en el espaciado. El patrón Fibonacci no es detectable. Indicador de estrés significativo o daño mecánico en la pluma.'
+  };
 }
 
-window.onload = update;
-</script>
-</body>
-</html>
+function getConfidence(n, cv) {
+  if (n >= 50 && cv < 15) {
+    return { level: 'Alta', class: 'confidence-high', description: 'Alta fiabilidad (muchas bárbulas y poca variación)' };
+  } else if (n >= 30 && cv < 25) {
+    return { level: 'Media', class: 'confidence-medium', description: 'Fiabilidad media (suficientes bárbulas, variación moderada)' };
+  } else {
+    return { level: 'Baja', class: 'confidence-low', description: 'Baja fiabilidad (pocas bárbulas o alta variación). Los resultados pueden ser poco representativos.' };
+  }
+}
+
+// ── DIBUJAR PLUMA (actualizado para incluir 'ideal' y 'uniforme') ──
+function drawFeather(canvas, spacings, mode) {
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#0d0d14');
+  bg.addColorStop(1, '#000');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  const cy = H / 2;
+  let col;
+  if (mode === 'ideal') col = '#22c55e';
+  else if (mode === 'uniforme') col = '#9a9ab8';
+  else if (mode === 'estresada') col = '#f43f5e';
+  else col = '#60a5fa'; // sana y otros
+
+  ctx.strokeStyle = '#f5c842';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(20, cy);
+  ctx.lineTo(W - 20, cy);
+  ctx.stroke();
+
+  const totalW = W - 50;
+  const totalSpace =
