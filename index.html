@@ -606,4 +606,204 @@ function drawFeather(canvas, spacings, mode) {
   ctx.stroke();
 
   const totalW = W - 50;
-  const totalSpace =
+  const totalSpace = spacings.reduce((a, b) => a + b, 0);
+  const scale = totalSpace > 0 ? totalW / totalSpace : 1;
+
+  let x = 25;
+  const maxBarb = Math.max(...spacings) * scale;
+
+  for (let i = 0; i < spacings.length; i++) {
+    x += spacings[i] * scale;
+    if (x > W - 20) break;
+
+    const normalLen = (spacings[i] * scale) / maxBarb;
+    const lenUp = (H * 0.38) * (0.6 + normalLen * 0.4);
+    const lenDn = (H * 0.38) * (0.6 + normalLen * 0.4);
+
+    const alpha = 0.45 + 0.55 * (i / spacings.length);
+    ctx.strokeStyle = col;
+    ctx.globalAlpha = alpha * 0.85;
+    ctx.lineWidth = 1;
+
+    ctx.beginPath();
+    ctx.moveTo(x, cy);
+    ctx.lineTo(x - 3, cy - lenUp);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(x, cy);
+    ctx.lineTo(x + 3, cy + lenDn);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  ctx.font = '10px DM Mono, monospace';
+  ctx.fillStyle = 'rgba(245,200,66,0.35)';
+  ctx.fillText(`φ = ${PHI}`, 8, H - 8);
+}
+
+// ── MODO ─────────────────────────────────────────────────────
+function setMode(mode, btn) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const mainWrap = document.getElementById('main-canvas-wrap');
+  const compareWrap = document.getElementById('compare-wrap');
+  if (mode === 'comparar') {
+    mainWrap.style.display = 'none';
+    compareWrap.style.display = 'block';
+    generateCompare();
+  } else {
+    mainWrap.style.display = 'block';
+    compareWrap.style.display = 'none';
+    generate();
+  }
+}
+
+function updateSlider(id, valId) {
+  const val = document.getElementById(id).value;
+  document.getElementById(valId).textContent = val;
+}
+
+// ── AÑADIR AL HISTÓRICO ──────────────────────────────────────
+function addToHistory(mode, n, ratio, error, cv, reliability, diagnosis) {
+  historyData.push({ mode, n, ratio, error, cv, reliability, diagnosis });
+  updateHistoryTable();
+}
+
+function updateHistoryTable() {
+  const tbody = document.getElementById('history-body');
+  tbody.innerHTML = '';
+  historyData.slice().reverse().forEach(item => {
+    const row = tbody.insertRow();
+    row.insertCell().textContent = item.mode;
+    row.insertCell().textContent = item.n;
+    row.insertCell().textContent = item.ratio.toFixed(4);
+    row.insertCell().textContent = item.error.toFixed(1) + '%';
+    row.insertCell().textContent = item.cv.toFixed(1) + '%';
+    const relCell = row.insertCell();
+    relCell.textContent = item.reliability;
+    relCell.className = `confidence-${item.reliability === 'Alta' ? 'high' : item.reliability === 'Media' ? 'medium' : 'low'}`;
+    row.insertCell().textContent = item.diagnosis;
+  });
+}
+
+function clearHistory() {
+  historyData = [];
+  updateHistoryTable();
+}
+
+function exportHistory(format) {
+  if (historyData.length === 0) {
+    alert('No hay datos en el histórico.');
+    return;
+  }
+  let content, filename, mime;
+  if (format === 'csv') {
+    const header = 'Modo,Bárbulas,Ratio φ,Error%,CV%,Fiabilidad,Diagnóstico\n';
+    const rows = historyData.map(d => 
+      `${d.mode},${d.n},${d.ratio.toFixed(6)},${d.error.toFixed(2)},${d.cv.toFixed(2)},${d.reliability},"${d.diagnosis}"`
+    ).join('\n');
+    content = header + rows;
+    filename = 'geometric_grace_history.csv';
+    mime = 'text/csv';
+  } else {
+    content = JSON.stringify(historyData, null, 2);
+    filename = 'geometric_grace_history.json';
+    mime = 'application/json';
+  }
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── GENERAR PRINCIPAL ────────────────────────────────────────
+function generate() {
+  const n = parseInt(document.getElementById('n-barbulas').value);
+  const noise = parseFloat(document.getElementById('noise').value);
+  const spacings = generateSpacings(n, currentMode, noise);
+  const result = analyzeFibonacci(spacings);
+  lastResult = { result, mode: currentMode, n, spacings };
+
+  drawFeather(document.getElementById('main-canvas'), spacings, currentMode);
+
+  const diag = getDiag(result.errorAjustado, result.cv);
+  const conf = getConfidence(n, result.cv);
+
+  document.getElementById('r-ratio').textContent = result.ratio.toFixed(6);
+  document.getElementById('r-error').textContent = result.errorAjustado.toFixed(2) + '%';
+  document.getElementById('r-cv').textContent = result.cv.toFixed(2) + '%';
+  document.getElementById('r-mean').textContent = result.meanS.toFixed(2) + ' px';
+  document.getElementById('r-barbulas').textContent = n;
+  const confSpan = document.getElementById('r-confidence');
+  confSpan.innerHTML = `<span class="confidence-badge ${conf.class}">${conf.level}</span>`;
+  confSpan.title = conf.description;
+
+  const diagSpan = document.getElementById('r-diag');
+  diagSpan.textContent = diag.text;
+  diagSpan.style.backgroundColor = diag.bg;
+  diagSpan.style.color = diag.color;
+  document.getElementById('r-explain').textContent = diag.explain;
+
+  document.getElementById('result-box').classList.add('visible');
+
+  simulationCount++;
+  document.getElementById('sim-counter').textContent = simulationCount + ' simulaciones';
+  addToHistory(currentMode, n, result.ratio, result.errorAjustado, result.cv, conf.level, diag.text);
+}
+
+// ── GENERAR COMPARACIÓN (con cuatro modos) ───────────────────
+function generateCompare() {
+  const n = 50;
+  const noise = 1.0;
+  const modes = ['uniforme', 'sana', 'ideal', 'estresada'];
+  const canvases = ['c-uniforme', 'c-sana', 'c-ideal', 'c-estresada'];
+  const metricsIds = ['cm-uniforme', 'cm-sana', 'cm-ideal', 'cm-estresada'];
+
+  modes.forEach((mode, idx) => {
+    const spacings = generateSpacings(n, mode, noise);
+    const result = analyzeFibonacci(spacings);
+    const canvas = document.getElementById(canvases[idx]);
+    drawFeather(canvas, spacings, mode);
+    const diag = getDiag(result.errorAjustado, result.cv);
+    const conf = getConfidence(n, result.cv);
+    const metricsDiv = document.getElementById(metricsIds[idx]);
+    metricsDiv.innerHTML = `
+      φ: ${result.ratio.toFixed(4)}<br>
+      CV: ${result.cv.toFixed(1)}%<br>
+      ${diag.text}<br>
+      <span class="confidence-badge ${conf.class}" style="font-size:0.6rem;">${conf.level}</span>
+    `;
+    simulationCount++;
+    addToHistory(mode, n, result.ratio, result.errorAjustado, result.cv, conf.level, diag.text);
+  });
+  document.getElementById('sim-counter').textContent = simulationCount + ' simulaciones';
+}
+
+// ── LEER RESULTADO ───────────────────────────────────────────
+function speakResult() {
+  if (!lastResult) return;
+  const { result, mode, n } = lastResult;
+  const diag = getDiag(result.errorAjustado, result.cv);
+  const conf = getConfidence(n, result.cv);
+  const msg = `Modo ${mode}. ${n} bárbulas. Ratio Fibonacci medido: ${result.ratio.toFixed(6)}. Error del ${result.errorAjustado.toFixed(2)} por ciento. Coeficiente de variación: ${result.cv.toFixed(2)} por ciento. Diagnóstico: ${diag.text}. Fiabilidad: ${conf.level.toLowerCase()}.`;
+  const utterance = new SpeechSynthesisUtterance(msg);
+  utterance.lang = 'es-ES';
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(utterance);
+}
+
+// ── INICIALIZACIÓN ───────────────────────────────────────────
+window.onload = function() {
+  // Por defecto, modo 'sana' activo
+  document.querySelector('.mode-btn.active').classList.remove('active');
+  document.querySelector('[onclick="setMode(\'sana\',this)"]').classList.add('active');
+  generate();
+};
+</script>
+</body>
+</html>
